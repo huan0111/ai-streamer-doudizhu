@@ -1,0 +1,23 @@
+{
+  "source_image_size": [44, 44],
+  "glyph_size": [32, 32],
+  "minimum_score": 0.72,
+  "minimum_margin": 0.04,
+  "sources": {
+    "0_a": {"path": "samples/selftest/follow_rejected_103246_911271.png", "seat": "right", "box": [30, 14, 14, 15]},
+    "1_a": {"path": "samples/selftest/selection_unstable_113049_426018.png", "seat": "left", "box": [10, 12, 10, 17]},
+    "1_b": {"path": "samples/selftest/selection_unstable_113049_426018.png", "seat": "right", "box": [27, 13, 11, 16]},
+    "2_a": {"path": "samples/selftest/follow_uncertain_104628_559765.png", "seat": "right", "box": [30, 14, 14, 15]},
+    "3_a": {"path": "samples/selftest/lead_rejected_080403_834098.png", "seat": "right", "box": [27, 12, 11, 17]},
+    "4_a": {"path": "samples/selftest/follow_uncertain_085042_917630.png", "seat": "right", "box": [27, 12, 11, 17]},
+    "4_b": {"path": "samples/selftest/follow_rejected_001012_162232.png", "seat": "right", "box": [24, 15, 12, 16]},
+    "5_a": {"path": "samples/selftest/follow_uncertain_093435_458887.png", "seat": "right", "box": [30, 12, 14, 17]},
+    "6_a": {"path": "samples/selftest/run_final2.png", "seat": "left", "box": [9, 14, 12, 17]},
+    "6_b": {"path": "samples/selftest/follow_uncertain_105033_082218.png", "seat": "left", "box": [8, 12, 12, 17]},
+    "7_a": {"path": "samples/selftest/follow_rejected_092035_518235.png", "seat": "right", "box": [30, 12, 14, 17]},
+    "8_a": {"path": "samples/selftest/follow_uncertain_111917_906464.png", "seat": "right", "box": [27, 12, 11, 17]},
+    "8_b": {"path": "samples/selftest/follow_rejected_122556_321898.png", "seat": "right", "box": [30, 14, 14, 15]},
+    "9_a": {"path": "samples/selftest/follow_rejected_092035_518235.png", "seat": "left", "box": [8, 12, 12, 17]},
+    "9_b": {"path": "samples/selftest/run_final2.png", "seat": "right", "box": [25, 15, 11, 16]}
+  }
+}

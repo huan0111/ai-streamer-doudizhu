@@ -1,0 +1,581 @@
+# Changelog
+
+本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与
+[语义化版本](https://semver.org/lang/zh-CN/)。
+
+## [Unreleased]
+
+## [0.2.5] - 2026-10-27
+
+### npm 发布改由 CI 用 Trusted Publishing 发（不再需要 2FA、不再需要本机登录）
+
+这一版只动发布链路，**运行逻辑与 0.2.4 完全相同**（`lib/` 不变，179 个用例照旧全绿）。
+
+- **新增 `.github/workflows/publish.yml`**：推 `v*` tag（或手工 `workflow_dispatch`）后，GitHub
+  为本轮运行签发短期 OIDC token，npm 用它比对「这个包的 Trusted Publisher 配置」，通过后只给
+  这一条 `publish` 命令发临时凭据，并带上 provenance 签名。仓库里**没有 `NODE_AUTH_TOKEN`**，
+  也没有任何 secret。
+- **`release.mjs` 新增 `--stage-only`**：只做「解包 → 改名 `dsh-doudizhu-lan` → 去掉生命周期
+  脚本 → 改 `cordis.patch.yml` 引用名」并打印目录，由 CI 在该目录里 `npm publish --provenance`。
+  本地交互发布与 CI 现在共用同一段暂存逻辑，不会出现两份实现各自漂移。
+- **CI 里带版本幂等判断**：目标版本已经在 npm 上就打印 `::notice::` 并跳过 publish，tag 重跑
+  不会撞 `E409 cannot publish over previously published version`。
+- npm 上的信任关系已注册（`npm trust list dsh-doudizhu-lan` 可复核，id
+  `b209784b-cd85-4971-9983-401a5e30c378`：仓库 `dingchenhui0618-arch/dsh-doudizhu`、
+  workflow `publish.yml`、权限 `createPackage` + `createStagedPackage`）。注册本身要一次 2FA
+  且**必须用 npm 12**：npm 11.12.1 打同一个接口返回 400（payload 里没有权限字段）。
+- 上一版 README 里「这条通道有一处自动化不了（要按 passkey）」的说法已随这一版作废。
+
+- npm：`dsh-doudizhu-lan@0.2.5`
+- GitHub Release：`v0.2.5`
+
+## [0.2.4] - 2026-10-27
+
+### 文档进包：`SECURITY.md` 随 npm 包一起发
+
+0.2.3 只把 `SECURITY.md` 放进了仓库，`files` 列表里没有它，所以从 npm 装的人看不到这份安全模型。
+这一版只补这一件事：`files` 加上 `SECURITY.md`，版本号前进一位，**运行逻辑与 0.2.3 完全相同**
+（`lib/` 不变，179 个单测照旧全绿）。
+
+- npm：`dsh-doudizhu-lan@0.2.4`
+- GitHub Release：`v0.2.4`
+- 市场条目：tarball 跟到 `v0.2.4`
+
+### 文档与工程
+
+- **`SECURITY.md`**：照 `dsh-rewind` 的规格写的安全模型——信任边界（局域网端口 / 本机回环路由）、
+  座位 token 与房间码各自的真实定位、输入处理（64 KiB 上限、牌 id 只在权威校验）、不碰文件系统、
+  六条已知限制、以及明确不算漏洞的清单。写的时候照实写了最难写的一条：**房间码是碰头把手不是门禁**
+  （`GET /hello` 公开它，`POST /join` 不带也能入座），要不要做成真门禁是 0.3 的设计题。
+- **`.github/workflows/ci.yml`**：`ubuntu-latest` × `windows-latest` × node 22/24 四组，跑
+  build、`lib/` 与 `src/` 是否一致（提交了 `lib/`，不一致说明忘了 rebuild）、179 个单测、推送前检查。
+  首次运行四组全绿。
+- **README 顶部**：CI / npm 版本 / 许可证三个 badge（下载量 badge 撤了——shields.io 对新包名
+  还返回 "package not found or too new"，不摆一个坏掉的图），并加了一行 star 引导：
+  插件市场的「搜插件」按 `dsh-plugin` topic + star 排序，star 是这个小插件唯一的曝光杠杆。
+
+## [0.2.3] - 2026-10-27
+
+### 换 npm 名：`dsh-doudizhu-lan`（功能与 0.2.2 完全一致）
+
+这一版没有改一行运行逻辑，改的是**能不能被搜到**。2026-10-27 实测 npm 搜索：
+
+| 搜什么 | 结果里有我们吗 |
+| --- | --- |
+| `dsh-doudizhu` | 没有。第 1 条是别人 2026-08-18 的 `dsh-doudizhu@0.0.0` 占位包（"Will be replaced by the real package"） |
+| `doudizhu` | 没有（占位包第 5） |
+| `斗地主` | 没有（`dsh-poker`、`@dsh-blue/blue-doudizhu` 都在） |
+| `@dingchenhui/dsh-doudizhu`（连自己的全名） | 没有——返回的是一堆 `@deepseek-ai/*` 泛化结果 |
+
+原因不是描述写得不够长，是名字的形状：npm 搜索把 `@scope/name` 当一个 token，搜
+`dsh-doudizhu` 匹配不上 `@dingchenhui/dsh-doudizhu`；这个包又只有几天、下载量 0，
+没有热度信号可以顶上来。而 `dsh-doudizhu` 这个名字是 `awesomehou` 占的（他自己也有
+同名 DSH 斗地主插件），要不回来，所以取了个无 scope、且以 `dsh-doudizhu` 开头的新名：
+
+```sh
+npm i dsh-doudizhu-lan
+```
+
+- npm 主名：`dsh-doudizhu-lan`（`latest` = 0.2.3）
+- 旧名 `@dingchenhui/dsh-doudizhu`（0.2.1–0.2.2）标 **deprecated**，指向新名；已装的不用
+  动，它里面就是 0.2.2 的修复，只是不再更新
+- 包内元数据一起改：`description` 开头放「斗地主 / Doudizhu」，`keywords` 从 7 个扩到
+  21 个（`斗地主`、`ddz`、`dsh-doudizhu`、`cordis-plugin`、`floating-window` 等）
+- GitHub 仓库描述与 topics 也补了（`doudizhu`、`card-game`、`lan`、`multiplayer`…），
+  README 开头三行block 写清「哪个包是这个项目、哪些同名仓库不是」
+- **验收标准**：`registry.npmjs.org/-/v1/search?text=dsh-doudizhu` 的结果里能看见
+  `dsh-doudizhu-lan`。发完实测写在下面。
+
+### 这一版发到哪了
+
+| 通道 | 坐标 | 校验 |
+| --- | --- | --- |
+| GitHub Release | `v0.2.3` | asset 86400 字节，sha256 `cc79a9527911b9ad0da0dc0024eb7a38aaec8b5ec0a84705f80ac48ac59a8608`，本地/asset/下载回来三处一致 |
+| npm | `dsh-doudizhu-lan@0.2.3`（`latest`） | shasum `cb871f5ad0ca8ee872f043111c6625bb30fa6c15`；装回来验过：目录 `node_modules/dsh-doudizhu-lan`、patch 引用名同名、`lib/index.js` 的 `name="dsh-doudizhu"` 与 `inject=["webServer"]`、`watchRoom` 在包里 |
+| 市场 | 条目 tarball 指到 v0.2.3 | PR [#9786](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/9786)（#8397 已合并，线上是 v0.2.2） |
+| 旧名 | `@dingchenhui/dsh-doudizhu@0.2.1/0.2.2` 已 deprecated | 三个版本的 `deprecated` 字段都带「Renamed to dsh-doudizhu-lan」 |
+
+### 验收结果：一半做到，一半做不到（照实记）
+
+发布后重新测同一组查询（`registry.npmjs.org/-/v1/search`）：
+
+| 查询 | 结果 |
+| --- | --- |
+| `doudizhu` | ✅ 第 19 条（共 20 条）——改名前完全不在结果里 |
+| `dsh-doudizhu`（精确名） | ❌ 仍然只有占位包。**这条是结构性的**：占位包的包名正好等于这个字符串，精确同名永远排第一；我们的名字是 `dsh-doudizhu-lan`，token 化后不是一个词，除非拿到那个名字否则不会变 |
+| `斗地主` | ❌ 不在（79966 条，按下载量排，我们 0 下载） |
+| `dsh-plugin doudizhu` | ❌ 不在 |
+
+所以「被 npm 搜索发现」只解决了一半：自然词 `doudizhu` 能找到我们，精确名找不到。
+真正稳的发现路径是市场条目（已上线）与 GitHub 仓库；npm 名的作用是把
+`npm i` 这条安装路走通、并让搜到的人认得出来。要不要再追一步（比如靠下载量自然提升
+排名），等有真实安装量再看数据，不做没有依据的承诺。
+
+## [0.2.2] - 2026-10-21
+
+### 修：电脑卡住不出牌
+
+实际打牌时报的问题，一句话：**轮到电脑，牌桌就不动了**。
+
+根因（不是"偶尔慢"，是必现的）：电脑的出牌定时器挂在**权威服务的 HTTP 请求处理**里
+（`net.js` 的 `finally` 钩子里调 `scheduleBot()`），也就是说只有**别人的机器**发请求过来才会
+重新计时。而本机上玩家自己的操作走的是插件回环路由（`/dsh-doudizhu/act`），那条路直接调房间
+函数，根本碰不到那个钩子。结果：
+
+| 场景 | 修之前的表现 |
+| --- | --- |
+| 一个人 + 两台电脑（没人连局域网端口） | 我出完第一手，电脑永远不动——直到有人来轮询 |
+| 局域网三人局 | 电脑每手都要等某个客户端轮询一次才动，看起来像"卡顿 1～2 秒" |
+
+修法是换挂点，不是加延时：房间自己发出"我变了"的信号（`watchRoom`，0.2.2 新增，通知所有
+长尾监听者，抛错的监听者不影响本次出牌），电脑调度只订阅这一个信号。于是不管这一步是谁走的、
+从哪条路进来的——权威端口、回环路由、还是上一台电脑自己——定时器都会被重新装上。
+
+顺手把"看起来像卡顿"的另一半也收了：客户端在**轮到电脑**时改用 260ms 轮询（真人回合 900ms，
+收起浮窗且不是电脑回合 2600ms）。电脑 700ms 想一手，之前要再等最多一个空闲轮询周期才看见。
+
+回归证据（两条测试，都是先复现再修）：
+
+- `test/bot-driver.test.mjs`：一个人 + 两台电脑，玩家只走房间 API（= 回环路由那条路），
+  一局必须打完；另有"没有任何端口在听"的纯同步驱动版本、`watchRoom` 退订与抛错用例。
+- `test/host.test.mjs` 新增用例：走真实插件路由（`/dsh-doudizhu/act`）+ 真实权威端口，
+  局域网端口上**没有别人**，两台电脑也必须把一局打完。
+
+两条测试都验证过"把修复拿掉就红"：驱动测试停在 `bidding`，host 测试报
+`两台电脑应当自己打完这一局（停在 bidding，我出牌 1 次）`——和用户看到的症状一致。
+
+单测 173 → **179**（+4 电脑调度、+1 host、+1 展示逻辑）。
+
+### 这一版发到哪了
+
+| 通道 | 坐标 | 校验 |
+| --- | --- | --- |
+| GitHub Release | `v0.2.2`，asset `dsh-doudizhu-0.2.2.tgz`，84425 字节 | sha256 `2a66e1f59b6f85054507e78a85d20c935a2bcc95a44a74211ab733e049860066`，本地/asset/下载回来三处一致 |
+| npm | `@dingchenhui/dsh-doudizhu@0.2.2`（`latest`） | shasum `3e50d6d049a28e36b7661b59f224f834ff99daf2`；装回来验过：包名、patch 引用名、`lib/index.js` 的 `name`/`inject`，以及 `lib` 里确实带着这一版的修复 |
+| 插件市场 | 条目 tarball 指到 v0.2.2 + 说明改成 179 个测试 | PR [#8397](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/8397) 就地更新 |
+
+## [0.2.1] - 2026-10-21
+
+### npm 通道改用 scope 名：`@dingchenhui/dsh-doudizhu`
+
+不带 scope 的 `dsh-doudizhu` 在 npm 上归 `awesomehou`（2026-08-18 的 `0.0.0` 占位包），
+所以这个仓库的名字发不上去。0.2.1 起 npm 这条通道走 scope 名，**GitHub Release 那条不变**：
+
+| 通道 | 名字 | 装出来长什么样 |
+| --- | --- | --- |
+| GitHub Release tarball（市场用这条） | `dsh-doudizhu` | `node_modules/dsh-doudizhu`，`cordis.patch.yml` 用包名引用自己 |
+| npm | `@dingchenhui/dsh-doudizhu` | `node_modules/@dingchenhui/dsh-doudizhu` |
+
+`node scripts/release.mjs --npm-name @dingchenhui/dsh-doudizhu` 发的是**解包后改名的那一份**：
+解出来的内容与 GitHub asset 逐字节相同，只改两处——`package.json` 的 `name`，以及
+`cordis.patch.yml` 里那行引用名。两处必须一起改，否则 scoped 装完之后 bundle patch 指不回
+自己的 `lib/`，插件会静默不挂载。脚本不再把 `--npm-name` 当成只影响提示装饰的参数（上一版
+就是这么写的：它打印 scope 名，然后照样 `npm publish` 原名，必然 403）。
+
+**实际发出去的**：`@dingchenhui/dsh-doudizhu@0.2.1`，`latest`，shasum
+`cd39856fc27b9aaeca817d8b667cd29e96095736`。从 npm 装出来验过三件事：安装目录是
+`node_modules/@dingchenhui/dsh-doudizhu`、`cordis.patch.yml` 里引用名是 `@dingchenhui/dsh-doudizhu`、
+`lib/index.js` 导出 `name = "dsh-doudizhu"` / `inject = ["webServer"]` / `apply` 是函数。
+包里那个 `0.0.0-stage` 是 npm 为 staged publishing 自建的占位版本，不是这一版的内容。
+
+**2FA 这条边界要说清**：`npm publish` 在非交互的脚本里必然 `EOTP`——脚本现在的做法是
+打印两行给人在真终端里贴，并按约定标 `⛔ BLOCKED`，不假装成功；真终端里 npm 会自己把浏览器
+弹出来，按一下 passkey（Google 密码管理器里那个，点 Continue）就继续发。
+
+## [0.2.0] - 2026-10-21
+
+### 界面：从「能打」到「一眼看懂」
+
+0.1.x 的牌桌是「数据都在」但不好读：三家座位是一列三张卡、台面只有一张牌、出牌记录藏在
+「记录」标签里、选牌全靠手点。这一版把这四件事各自重做了一遍，并**用真实渲染图验收**
+（`docs/table.png`、`docs/history.png`、`docs/lobby.png`，真实 `lib/client.js` + 装在本机的
+DSH 主题 token + 真牌局）。
+
+| 需求 | 做法 | 判定它成立的证据 |
+| --- | --- | --- |
+| 局域网昵称自定义 | 牌桌上点「改名」就地改（12 字以内），`act({type:'rename'})` 走权威；重名自动加 ` 2` 后缀，同名是 no-op | `test/room.test.mjs` 的改名/去重用例；`test/client-half.test.mjs` 断言点「改名」→ 输入 → 发出 `{type:'rename',name:'老王'}` |
+| 界面更直观 | 三家**并排**座位卡（我·下家·上家，地主/农民 + 剩余张数 + 会走空的进度条）；台面一行说清「谁出的 · 什么牌型 · 要更大」；底牌改成文字贴在右侧 | 26 个展示逻辑用例 + `docs/table.png`；座位顺序由 `UI.relativeSeat` 返回语义值（`you/right/left`），不再在卡片里写死中英文 |
+| 出牌历史 | 折起的「出牌历史」条贴在牌桌上，常显「本局 N 轮 · M 手」，点开就地展开每一轮；连「不出」也是记录里的一手，连续两家不出自动分轮 | `game.turns[]` 新契约（权威侧）+ `UI.turnGroups` 分组用例；`docs/history.png` |
+| 出牌提示 / 帮我出 | 「提示」按最省牌力排序枚举出的合法出法，点一次选中一手，多解显示 `提示 2/8` 再点换下一个；「帮我出」直接打出去。全部本地 `rules.js` 枚举，不发请求、不读别人手牌 | `test/ui-logic.test.mjs` 断言提示合法且有序；`test/client-half.test.mjs` 断言两个按钮分别「选中」与「出牌」 |
+
+### 看着渲染图才发现的三件事
+
+- **窗口底色不是一组色阶。** `.ddz-mini` 原来用 `--dsw-alias-bg-overlay`，而它在装在本机的
+  深色主题里解出来是中灰 `#61666b`，窗口里的卡片是 `#232324`——图上看就是「毛坯」。改成
+  `bg-layer-2` 后窗口和卡片才是一组。`test/client-half.test.mjs` 现在断言样式读的是
+  `bg-layer-2` 与 `label-primary`，不再盯 `bg-overlay`。
+- **手牌会被滚出窗口。** 地主的 20 张牌会把牌桌顶到 78vh 之外，手牌和「出牌」按钮一起消失。
+  现在手牌与按钮是**独立于滚动区的 dock**（`ddz-dock-bar`），牌桌自己滚。
+- **出牌历史的最上面一行永远是半个。** 原先滚到 `scrollHeight`，顶部那一轮被切一半，看着像
+  渲染坏了。现在落在轮次边界上（`max-height: 200px` 正好放两轮完整记录）。
+
+### 顺手
+
+- 空座位不再显示「0 张」（看着像已经出完了），未发牌时显示「未发牌」；房间里不再显示「第 0 局」。
+- 牌面改成左上角「点数 + 花色」的真实牌布局：24px 宽的迷你牌上，原来的居中排版会让花色挤成
+  一个小点。
+- `scripts/browser-harness.mjs`：`--room` 模式新增 `?tab=1` 才挂会话标签页——桩宿主把两个槽位
+  叠在一页里，截图时标签页会从浮窗底下透出来。
+
+## [0.1.6] - 2026-10-19
+
+### 发布流水线：`node scripts/release.mjs`
+
+0.1.4 与 0.1.5 都是手工发的：build → pack → tag → push → `gh release` → 市场条目。六步里
+每一步都能判定「做了没做」，但每次都要人肉核对（三处 sha256、市场条目有没有跟着换版本）。
+这一版把它收进一个脚本：八步、幂等、可 `--dry-run`，被外部条件卡住时**标 BLOCKED 而不是假装成功**。
+
+| 步骤 | 做什么 | 怎么判定做完 |
+| --- | --- | --- |
+| preflight | 版本 / 分支 / 工作区 / CHANGELOG / 单测 / pre-push | 任何一项不过就停，不发一个红的版 |
+| build | 重建 `lib/` | esbuild 输出 |
+| pack | `npm pack` + sha256 | 包内 `package.json` 版本 == 目标版本 |
+| npm | `npm publish` | `npm view <name>@<ver>` 查得到；包名被占时提示改用 scope 名 |
+| git | 打 tag、推 main 与 tag | `git ls-remote` 查得到 tag |
+| release | `gh release create`，notes 由 CHANGELOG 那一节生成 | asset 的 digest == 本地 sha256 |
+| market | 市场条目换 tarball + 用例数，开 PR 或就地更新已有 PR | 条目指着这一版 |
+| verify | 三处 sha256 比对（本地 / asset / 下载回来的） | 三处一致 |
+
+### 其它
+
+- `package.json` 补上 `repository` / `homepage` / `bugs`。这不是好看：市场用 `probe-npm.mjs`
+  把仓库和 npm 包对上，靠的正是**发布出去的包里 `repository` 指回同一个 GitHub 仓库**
+  （防的是抢注同名包）——不写，npm 上发了也不会被市场认领。
+- README 增加「发布」一节：一条命令、每步的验收信号、npm 卡住时怎么办。
+
+## [0.1.5] - 2026-10-19
+
+### 修复：浮窗拖一下就会自己展开
+
+收起后的药丸是个 `<button>`。按住它拖动时 `pointerdown/move/up` 都正常，但浏览器在
+`pointerup` 之后**照样补一个 `click`**——于是每拖一次，`onClick` 就把窗口展开，位置对了、
+状态不对。单测当时没覆盖这条：它测的是「点击会展开」，没人测「拖动不是点击」。
+
+- 修法：按下时把标记清零，`pointermove` 里位移超过 **4px** 才认成拖动并置位；药丸的
+  `onClick` 先问这个标记，是拖动留下的一次性 click 就吞掉（`preventDefault` +
+  `stopPropagation`）并立刻清位。`title` 也从「单击展开」改成「单击展开 · 拖动移动」。
+- 验法：两条新用例跑**真实 `lib/client.js`**——拖 140/22 像素后 `collapsed` 仍是 `true`、
+  `x/y` 已经变了、那次 click 被拦下；原地抖 3px 松开仍算点击、窗口照常展开。
+  把守卫改成恒假再跑，第一条立刻红，所以它不是摆设。
+- 真浏览器里又验了一遍：Chrome 里发原生指针事件，`pointerdown → 3×pointermove →
+  pointerup → click` 之后药丸**确实收到了 click**，但没展开，`prefs.collapsed` 仍是 `true`。
+
+### 界面：加深了一点层次，布局不动
+
+只改 CSS（`src/client-css.cjs`），布局与交互位置一寸没动：
+
+- 手牌加了纵向渐变、投影和更大的圆角，选中的牌抬起 10px 并套一圈 2px 主题色光环；
+- 浮窗里那条**刺眼的白色滚动条**换成细的主题色滚动条（用户截图里最明显的一处）；
+- 座位、桌面、按钮、图标按钮补了 hover / `:active` 反馈与过渡；轮到你时药丸的圆点会呼吸
+  （1.5s 循环）；拖动时药丸有抬起阴影、光标变 `grabbing`；
+- `:focus-visible` 补了可见焦点环；拖动期间禁掉文本选中，并给药丸/标题栏加 `touch-action:none`
+  （触摸屏上拖动手势不再被浏览器抢去滚动）；
+- 全部动效都收在 `prefers-reduced-motion: reduce` 里。
+- 颜色纪律没破：品牌色底上的文字仍然只用 `--dsw-alias-label-primary-foreground`，
+  `test/theme.test.mjs` 的结构守卫照旧拦得住。
+- 前后对比是**同一局牌、同一位置**拍的：只把 `<style>` 换回 0.1.4 的 CSS，像素差异 6.67%。
+
+### 电脑：四档从 31.1 / 43.9 / 56.7 / 57.8 拉到 31.1 / 43.9 / 63.3 / 66.7
+
+`node scripts/bot-league.mjs`（60 seeds，每档 180 手；同一副牌、同一座位，只换一个座位的强度）：
+
+| 难度 | 0.1.4 | 0.1.5 | 当地主时胜率 | 当上地主 |
+| --- | --- | --- | --- | --- |
+| 简单 easy | 31.1% | 31.1% | 55.9% | 19% |
+| 中等 medium | 43.9% | 43.9% | 76.9% | 36% |
+| 困难 hard | 56.7% | **63.3%** | 87.4% | 48% |
+| 地狱 hell | 57.8% | **66.7%** | 85.3% | 64% |
+
+180 seeds 复核：困难 52.6% → 61.5%，地狱 55.4% → 65.2%。改动都按难度门控，中等那条
+代码路径逐字节没动（它是联赛的对照组）：
+
+1. **跟牌不再拆自己的对子。** 同样压得住，用一张 J 拆掉 `JJ` 会让剩下的牌凭空多一个回合；
+   现在按压完之后「还剩几手」排序，再取点数最小的。困难 / 地狱各 +2.8pp。
+2. **当地主领出时不烧 2 和王。** 旧规则为了少一个回合，会把四张 2 当「四带两对」直接领出去；
+   现在留作控制牌。只对地主生效——给农民加同样的过滤实测掉 0.5pp，已回退。
+3. **叫分门槛按难度单调放宽**（困难 `[7,11,15]`、地狱 `[5,9,13]`）。依据是另一组测量：
+   强制每手都叫 3、按起手强度分六档，地主胜率 56.0%–96.6%，而农民一方只有三成上下——
+   这个引擎里「抢到地主」本身值二十多个百分点。
+
+**两条必须说清的事**（README 里也写了）：
+
+- 困难与地狱放在**同一张叫分表**上胜率相同：地狱那套记账规则在联赛里几乎触发不到，
+  这 3.4pp 来自它更敢抢地主，不是「算得更准」。
+- `hell: [2,5,8]` 能到 70.7%，但那等于「几乎每手都叫 3 分」，地狱当上地主 **84%**，
+  人再没机会坐庄，电脑还会拿烂牌乱叫。定的是 `[5,9,13]`（地主率 64%）——产品取舍，
+  `test/bot.test.mjs` 用「3 分门槛不许低于 12」把它钉住。
+- 试过又回退的：队友快走完时喂小牌（触发太少）、农民留 2/王（−4pp）、领出时优先出不出去的牌
+  （−4pp）、开局先出最小单张（−3pp）、炸弹抢牌权、危险阈值改成 3、放宽必杀线。
+
+### 其他
+
+- `BOT_BLURBS` 跟着改了：困难那句「其余同中等」已不准（不拆对子、留控制牌都是新的），
+  地狱补上「叫分门槛最低，手牌稍好就敢抢地主」。
+- 用例总数 **153 → 158**（新增 2 条拖动手势、3 条电脑规则）。
+- README 补了「电脑玩家有多强」一节、两处诚实结论，以及
+  `Emulation.setFocusEmulationEnabled`（后台标签页收不到 `mousePressed`）这个坑。
+
+## [0.1.4] - 2026-10-16
+
+### 修复：浮窗里两个按钮的文字看不见（白底白字）
+
+用户报「页面中白框几个字体有问题」，指的是浮窗上两个空白圆角块：**端口右边的「开房」
+按钮**，和**人机里被选中的那个强度**。它们不是没渲染，是**白字压在近白底上**。
+
+- 病根：深色主题下 DSH 把 `--dsw-alias-brand-primary` 设成 `--dsw-static-neutral-bluish-50`
+  = **`#f9fafb`（近白）**，而我在这两条规则里把文字色硬编码成了 `#fff`。
+  实测对比度 **1.05:1**（等于看不见），而未选中的强度按钮是 `#cfd3d6` 所以看得到——
+  用户截图里「第一个是白框、后面三个有字」正是这个差别。
+- 修法：改用 DSH 自己主色按钮用的那个 token —— `--dsw-alias-label-primary-foreground`
+  （浅色主题 `#fff`、深色主题 `#0f1115`，**随主题反色**），兜底再退到 `--dsw-alias-bg-base`。
+  实测对比度 **1.05 → 18.08**（暗色）/ **18.9**（浅色）。
+- 顺手把另外几处「假设底色一定是暗的」硬编码颜色换成主题 token：地主/农民徽标
+  （`state-warn-primary` / `state-success-primary`）、红桃方块与大王（`state-error-primary` /
+  `state-warn-primary`）。色相不变，浅色主题下也可读。
+
+### 修复：浏览器夹具以前根本没有 DSH 主题 token
+
+这个 bug 能活到用户手上，是因为 `scripts/browser-harness.mjs` 的夹具页里一个 `--dsw-…`
+都没有，所有变量都落到插件自带的**暗色兜底**上——于是「暗色主题给近白品牌色」这件事
+在夹具里物理上不可能出现，我看到的是一颗蓝色按钮。
+
+- 新增 `scripts/dsh-theme.mjs`：从**已安装的 DSH**（`app.asar`）里解出主题 token 的真实值
+  （解析是纯函数，单测覆盖；读归档是薄薄一层）。
+- 夹具新增 `--theme dark|light|none`（默认 dark），把真实 token 注进页面，并在页顶写清
+  注入了哪套、几个。现在夹具会重演用户看到的样子。
+- 新增 `test/theme.test.mjs`（9 条）：解析/链式 `var()`/白名单，以及**结构守卫**——
+  「品牌色底上的文字必须是主题 token」。其中一条**拿当初那行坏 CSS 当夹具**，
+  证明这条守卫真的会失败（否则它就是摆设）。
+
+用例总数 **144 → 153**。
+
+## [0.1.3] - 2026-10-16
+
+### 新增：电脑玩家（四档强度，人不够也能开局）
+
+用户要求「人机可选简单/中等/困难/地狱，这样一个人或仅两个人的情况下也可以正常进行」——
+这条**推翻了**原先钉死的「不补位、必须三人到齐才开局」。现在的行为：
+
+- 空位可以交给电脑，**坐满三个座位就自动发牌**（电脑占座与真人占座一视同仁）。
+- 四档强度**随时可换**（牌局进行中也行）；**数量只能局间改**，因为局中给某个座位加人
+  会让它没有手牌。只有房主能改，客人的请求由房间拒绝并写明理由。
+- **朋友中途来了**：局间「加入」会顶掉编号最大的电脑座位（房主自己的位子不动）；
+  局中「加入」被拒，理由是「牌局进行中不能换人」。
+- 真人**仍然没有回合计时**；电脑等 700ms 再动，只是为了让真人看清牌桌。
+
+四档不是同一套算法加噪声，而是**规则的严格包含关系**（`src/bot.js` 顶部有对应表）：
+能走完就走完 / 压最小的牌留炸弹 / 农民不压快走完的队友 / 有人快走完时不惜上炸弹拦住，
+这四条从「中等」起；先手按「还剩几手」选牌 + 叫分更凶属于「困难」；**记账**（算得出
+「这一手已经没人压得住」、找得出必杀路线）只有「地狱」。
+
+实测（`node scripts/bot-league.mjs`：同一副牌、同一座位，只换那一个座位的强度，每档 180 手）：
+**简单 31.1% < 中等 43.9%（对照组）< 困难 56.7% < 地狱 57.8%**。地狱与困难只差 1.1pp，
+这批样本里不显著，README 里明确写了「不把地狱明显更强当结论卖」。
+
+**自己踩的坑（记下来因为它差点发货）**：第一版给「困难/地狱」写的是线性打分，
+`PASS_FLOOR = -60` 这个阈值是在**我没核对量纲**的分数上拍的——普通一手的分数本来就在
+−70 ~ −95，于是困难和地狱**几乎不出牌**（40 手只出手 376 次，不出占 57.7%，平均每手 25 个
+动作），实测**比中等还弱**，地狱甚至低于困难。改成「把『不出』当成同尺度候选一起比大小」
+之后才正常。另外两条听起来很聪明的规则——「压得住就一直压」和「进残局就记账」——
+用配对联赛量出来是 **0 ~ −3.3pp，也就是更弱**，**已删除**；`DANGER_AT` 的阈值同样扫过
+2/3/4/5，3 和 4 都比 2 差。规则名字好听不代表有用。
+
+- 新增 `src/bot.js`（策略，住在权威那台机器里）、`test/bot.test.mjs`（16 个用例）、
+  `scripts/bot-league.mjs`（量强度的联赛脚本）、`test/helpers/league.mjs`。
+- `src/room.js` 新增 `botView`（电脑唯一的输入，字段集被测试钉死，多一个字段就红）、
+  `botTurnSeat`、`applyBotAction`（每手都过真引擎校验 + 两层保底出法）、`bots` 动作与
+  「朋友顶掉电脑座位」；`src/net.js` 由**权威自己的定时器**驱动电脑，不依赖任何客户端在线；
+  `src/host.js` 的 `/host` 接受 `botLevel`；浮窗新增「电脑」一栏（四个强度按钮 +
+  「用电脑补齐空位」/「撤下电脑」）。
+- 公平性是**结构性的**：电脑和权威同进程，物理上读得到任何手牌，所以靠的是「交给它的
+  对象里没有」，不是承诺。它连牌堆顺序都没有：`outstanding`（整副牌 − 自己的手 − 已出的牌）
+  是任何会记牌的人都有的公开信息，不是偷看。
+- 浮窗那两个按钮**发出什么形状的请求**也有测试按在线上（`test/client-half.test.mjs`：
+  补齐发 `{type:'bots', level, count:2}`、点强度只换强度不动数量、局中数量按钮是灰的）——
+  「加入」当初就是死在两个半区的字段名对不上，新按钮不能只靠源码头读。
+- 有一条**真实 HTTP** 用例：人只答自己的回合，其余全由权威自己走完；并断言
+  「电脑一次都没提出过非法出法，也没触发过保底」（四档 × 全电脑/1人+2电脑/2人+1电脑）。
+- **实机验过（重启后的运行中 DSH）**：新增 `scripts/live-bots.mjs`，用「1 真人 + 2 台地狱
+  电脑」打完一整盘——脚本只发 0 号位的 15 次请求，**电脑自己出牌 22 次、叫分 2 次**，
+  零保底、54 张齐、局中那张快照里没有出现电脑当时的手牌、下一局两台电脑还在座上、最后干净
+  关房（role 回到 idle）。第一版脚本我自己写错了一条判据：在「什么都不做」之前正好轮到我
+  叫分，台面当然不动，却报了 FAIL——判据改成「先走完我这一手，再故意闲置」，并补上
+  「电脑出的每一张牌都来自电脑座位」。
+- 用例总数 **126 → 144**。
+
+## [0.1.2] 及更早（合并记录）
+
+这一节按主题记着 0.1.2 到 0.1.0 做过的事（「加入」按钮的字段错位、真 GUI 验收、规则引擎
+与传输的首版、安全约定）。每次发版的独立说明在 GitHub Release 里，这里不再重复切分。
+
+### 修复
+
+- **「加入」按钮从来没成功过（v0.1.2）。** 浮窗 `onJoin()` 发的是 `{ baseUrl, code, name }`，
+  宿主 `becomeGuest()` 读的是 `input.url`，于是 `baseUrl` 解析成空串并直接返回
+  「请填写房主地址（例如 …）」——**地址栏里填什么都不会变，座位从来没被占到**。
+  同事截图上的那句红字就是它。
+  为什么一直没发现：这条路由唯一的测试用的是 `{ host, port }`（宿主接受的另一种形状），
+  客户端发的是第三种形状，两边各自都"对"，中间没人对；而 `检查` 恰好读 `url`，所以症状
+  看着像网络不通（检查能连上、加入进不去）。
+  修法：客户端改发规范字段 `{ url, code, name }`；宿主 `becomeGuest`/`probe` 同时接受
+  `url` 与 `baseUrl`，已装旧版的机器不更新也不会被落下。
+  补 4 个测试（总数 118）：`test/contract.test.mjs` 读 `src/client.cjs` 源码抽出每个请求体的
+  顶层字段，对着 `src/ui-logic.js` 新增的 `ROUTE_BODIES` 路由表核对（扫描不到请求体即失败，
+  避免空扫描通过；实测把客户端改回 `baseUrl` 就会报「加入 必须发 url 字段」）；
+  `test/host.test.mjs` 把客户端真正会发的 `{ url }` 打到真实插件实例上，并覆盖
+  `{ baseUrl }` 与空地址。
+  实测：旧宿主半区下 `join {baseUrl}` → 409「请填写房主地址」，`join {url}` → 200
+  `role=guest seat=1`，离开后回到 `idle`。
+- **分享出去的是一个连不上的地址。** `lanAddresses()` 用 `Object.values(networkInterfaces())`
+  丢掉了网卡名，所以分不清真网卡和虚拟网卡，把 WSL 的 `vEthernet` 地址（`172.22.0.1`）
+  和真实 WLAN 地址并列成 `地址 192.168.1.50:8791 或 172.22.0.1:8791` 一起发给别人——
+  一半概率抄到那个永远连不上的。本机实测同事拿到的就是这个地址。
+  现在改成：保留网卡名、虚拟网卡排到最后、**只把真实网卡的地址放进分享那一行**，
+  被隐藏的虚拟网卡在 UI 里用一行小字说明是哪一个（新增 `lanCandidates`、
+  `rankLanCandidates`、`isVirtualIface`、`lanChips`、`hiddenLanCandidates`）。
+  顺带修掉同一类陷阱：`127.0.0.1` 原来也在可复制列表里，发给别人等于让他连他自己，
+  现在那一项标了「（本机）」。
+- **`scripts/live-check.mjs` 的压牌分支是死代码。** 它读 `move.shape` / `move.length`，
+  而 `classifyMove` 从来没返回过这两个字段（返回的是 `type` / `size` / `mainValue`），
+  于是除了第一次领出，之后每一步都走 `pass`。牌局照样能结束——谁领出谁一路领完——
+  所以这个缺陷一直没暴露：它证明的是传输，不是规则。
+  现在改成用真的 `classifyMove` / `canBeat` / `smallestLead` 选牌，并**加了断言**
+  （`beats > 0`、`passes > 0`）。修完实测一盘：**领出 7 次 / 压上家 36 次 / 不出 16 次**；
+  修之前这个数字是 0 次。
+
+### 订正
+
+- **"新增客户端半区必须重启 DSH"是错的。** 我原先的结论建立在探测
+  `/plugins/<id>/client.js` 返回 404 上，但那个探测**不可诊断**：已经正常工作的
+  `dsh-holdem` 同样 404（桌面版走 shell 自己的 carrier，不是那条 HTTP 路由）。
+  实测**把插件关掉再打开一次**，运行中的页面就通过 HMR 拿到新的 Loader entry 并按
+  `dsh.client` 组合出客户端半区。判断"客户端半区装上没有"要看**客户端槽位树**，不是 HTTP 探测。
+- 现场证据（本机桌面版，**没有重启**）：`shell.overlay` 出现
+  `{registrant: "dsh-doudizhu", id: "doudizhu-mini", order: 30, active: true}`，
+  排在 `holdem-mini`(20) 与 `den-mini`(40) 之间；`conversation.view` 出现
+  `{id: "doudizhu", order: 30, active: true}`。
+
+### 真 GUI 验收（M5 的视觉部分）
+
+桌面版的窗口是 Electron、没有开远程调试端口，WebBridge 只能驱动 Chrome、够不到它；
+未带会话的 `GET /` 返回 401，而认证带在 URL 上，新开标签页也进不去。绕开的办法是
+**按窗口句柄截图**：`user32!PrintWindow` 只抓 DSH 这一个窗口，不需要任何输入通道，
+也不截整个桌面。抓到的事实：
+
+- **标签栏出现「斗地主」**，位置在 `审查` 与 `日报` 之间，正是注册的 `order: 30`。
+- **浮窗在浮窗层里渲染成收起态药丸** `● 斗地主 · 等人`：状态圆点、圆角背景、
+  `斗地主 · <阶段>` 文案都在，说明 `src/client-css.cjs` 在真实宿主里生效，
+  没被浮窗层的点击穿透规则吃掉。
+- **药丸文字会自己变**：两次抓图之间从 `斗地主 · 等人` 变成 `斗地主 · 未进桌`
+  （对应我这边把房间关掉）。这是轮询与重渲染在真实宿主里跑着的直接证据。
+- **交互在真实浮窗层里是通的**：点中药丸收起生效并落盘 `prefs.collapsed`，拖动也生效，
+  说明事件处理与 `localStorage` 在这层壳里都正常。
+
+没抓到的：展开态的像素。使用者点开过（能点中「—」把它收起，说明展开态确实渲染了），
+但我没能自己截到那一张。
+
+### 发布
+
+- **已推到 GitHub**：<https://github.com/dingchenhui0618-arch/dsh-doudizhu>（public）。
+  Release 附 `dsh-doudizhu-<version>.tgz`——`pnpm pack` 的产物，只有 8 个文件
+  （`lib/index.js`、`lib/client.js`、`cordis.patch.yml`、`package.json` 与四份文档，
+  不含 `src/`、测试与 `_tmp/`，40,934 字节）。这就是另外两家要装的包，
+  **他们不需要克隆、不需要构建、不需要在本机装 Node**。
+- 实测该地址能装：干净目录里 `pnpm add <release tarball URL>` 5.7 秒装好，
+  装出来的包能真的加载出 `name = "dsh-doudizhu"`、`inject = ["webServer"]`、`apply` 函数，
+  且 `exports["./client"]`、`dsh.bundle.patch`、`dsh.client` 元数据齐全。
+- 推送前三步检查的结论：无 API key / token / 私钥 / `.env`；`.gitignore` 覆盖
+  `node_modules/`、`_tmp/`、`*.tgz`、`.env*`、`*.pem`、`*.key`；临时产物与截图全部留在
+  未提交的 `_tmp/`。**顺带清掉了一处真实的隐私泄漏**：本机局域网地址原本被写进了
+  浮窗的输入占位符、错误示例和测试数据，已换成文档示例地址。
+
+### 新增
+
+- 规则引擎 `src/rules.js`：54 张牌堆、11 种合法牌型识别、压牌关系、
+  炸弹与王炸、座位与阵营 helper。移植自 Aevi 家庭斗地主（MIT）。
+- 牌局状态机 `src/game.js`：发牌（17/17/17 + 3 底牌）、顺时针叫分、
+  地主定选与底牌归属、出牌/不出校验、台面收回、胜负判定、首叫位顺时针轮换。
+  纯函数、状态可 JSON 序列化、随机源可注入，因此整局可从种子复现。
+- 房间模型 `src/room.js`：座位与令牌（一人一签）、房间码校验、断线保座重连、
+  三人到齐自动发牌、流局自动重发。`snapshotFor` 是**唯一**决定哪些牌能离开权威的地方。
+- 传输 `src/net.js`：权威侧 `http` 服务（默认绑 `0.0.0.0`，端口可配）+
+  follower 侧长轮询客户端。零运行时依赖。
+- **DSH 插件 host 半区 `src/host.js`**：`export name / inject = ['webServer'] / apply(ctx, config)`，
+  在 DSH 自己的回环 webServer 上挂 `/dsh-doudizhu` prefix 路由。两种角色——
+  开房（绑定局域网端口、本地玩家坐 0 号位、令牌不出内存）与加入（长轮询 follower）。
+- 构建脚本 `scripts/build.mjs`（esbuild 打包 `src/host.js` → `lib/index.js`，并校验插件
+  导出、`webServer` 注入、客户端 bundle 可解析），`scripts/wrap-client.mjs` 为 M5 的
+  客户端半区备好。`prepack` 自动 build。
+- `scripts/live-check.mjs`：对着**运行中的 DSH** 做实机验收——开房、经局域网地址入座、
+  打完一盘、开下一局、关房，全程做防泄牌扫描。
+- 确定性随机源 `src/rng.js`：`seedRandom` / `randomCode`。
+- **客户端半区 `src/client.cjs` + 展示逻辑 `src/ui-logic.js` + 样式 `src/client-css.cjs`**：
+  浮窗（`shell.overlay`，可拖动、可收起成药丸、位置与折叠状态存 `localStorage`）
+  与会话标签页（`conversation.view`）两个入口，一份代码两种角色通用。
+  排队、叫分、选牌出牌、不出、复盘、下一局都在浮窗里完成；
+  手牌按牌力排开、按钮选到合法牌型才可点、本地即时反馈与权威判定分开。
+  样式全部走宿主主题令牌，深浅色跟随宿主。
+- 展示逻辑单独成模块并有单测：牌面文案与配色、手牌排序、选牌切换、
+  「能不能出」的原因、叫分按钮可用性、各阶段按钮组合、状态行、出牌历史、
+  事件日志、昵称/位置偏好清洗、窗口位置夹取、地址规整。
+- `test/client-half.test.mjs`：在干净 V8 上下文里加载**真实的 `lib/client.js`**，
+  用最小 React 与最小 DOM 驱动真实房间快照，覆盖槽位注册、渲染与按钮交互。
+- `test/client-bundling.test.mjs`：浏览器半区的依赖守卫。
+- `scripts/browser-harness.mjs`：桩宿主。在真实浏览器里用真实 React 加载真实 `lib/client.js`，
+  把 `/dsh-doudizhu/*` 代理到运行中的插件，用来做真机视觉验收（唯一 stub 的是 DSH 自己的槽位外壳）。
+- 单测 112 个（规则 18、牌局 18、房间 17、传输 11、插件 host 11、
+  展示逻辑 21、客户端依赖 4、客户端渲染 12）。
+
+### 安全
+
+- **防泄牌有断言，不是靠约定**：每一步都快照里不得出现「别人的、尚未公开的」牌面 id。
+  房间层、HTTP 层、插件层各查一遍；另有一个独立 OS 进程再查一遍。
+  公开的牌（打出去的牌、地主拿走后的 3 张底牌）不算泄露；一局结束后全明牌是刻意的
+  复盘行为，由 `secretsRevealed` 标记并有测试钉住它只在结束后为真。
+- 座位令牌只在 `x-ddz-token` 请求头里传，不落 query；无令牌 → 401。
+- 权威接口请求体上限 64 KiB；非法 JSON → 400；未知路由 → 404。
+- 关闭权威会唤醒所有挂起的长轮询并释放端口，不等 keep-alive 超时。
+- 插件本地路由上所有改状态的操作要过三道：本地令牌
+  （`x-dsh-doudizhu-token`，首次 GET 下发）、`Origin` / `Referer` 同源、
+  `sec-fetch-site` 非跨站。非 http(s) 来源（桌面壳的 `dsh-app://`）按「无信息」处理，
+  避免误伤。
+- 插件层请求体超限回 413 并 `connection: close`——不是直接掐 socket，
+  否则客户端只会看到 `fetch failed` 而拿不到原因。
+- 权威端口**只在开房期间监听**；散局、卸载、切换到另一种角色都会关掉它。
+- **实测边界：DSH 的 Web 认证不覆盖插件 prefix 路由。** 未带会话时 `/api/boot` 返回 401，
+  而 `/dsh-doudizhu/state` 返回 200。因此三道校验是改状态接口唯一的防线；
+  响应不带 CORS 头，别的网页读不到响应体，但**本机任何进程都能读到你自己的手牌**。
+  攻击面未扩大到局域网（路由在回环上，权威端口另开且只承载牌局端点）。
+- **不把 DSH 自己的 webServer 开到 `0.0.0.0`**：那后面是完整的 agent API，
+  局域网里任何人都能驱动宿主的会话。游戏走独立端口，只开牌局端点。
+
+### 修复
+
+- **小王 id 与黑桃 J 撞号**：`SJ` 既是「小王」又是黑桃 J，牌堆会少一张（53 张），
+  `10JQKA` 也识别不出来。已固定为上游的 `LJ` / `BJ` 并加了回归测试。
+- **大厅阶段显示占位名**：`snapshotFor` 的 `you.name` / `seats[].name` 读的是
+  `createGame` 时的占位名，只有发牌时才同步真实座位名，所以刚开房会显示「玩家一」。
+  显示名改为以座位名册为准（有回归测试）。
+- **一次失败的尝试会拆掉当前牌局**：`becomeHost` / `becomeGuest` 原本先 `shutdown()`
+  再干活，于是一次房间码填错就把你从正在打的桌上踢下线。改为先把能失败的事做完
+  再切换角色。
+- **以客人身份重连同名房间会多占一个位子**：会拿新令牌占第二个座位，旧座位变成幽灵。
+  改为复用原令牌重连。
+- **Windows 上端口被占用不报错**：`SO_REUSEADDR` 的语义让第二次 bind 到同一端口成功，
+  于是两个权威共用一个端口、连接被瓜分。改为监听前先探一次端口，占用则明确拒绝。
+- **409 响应却带 `ok: true`**：`{ ...result, ...localState() }` 里 `localState()` 的
+  `ok: true` 把失败结果覆盖了。`localState()` 不再携带 `ok`。
+- **纯规则模块偷偷依赖 Node**：`src/rules.js` 为了给 `shuffleDeck` 一个默认随机源而
+  `import 'node:crypto'`。这只在 host 半区消费它时看不出来，浮窗一开始引用规则就炸——
+  esbuild 报 `Could not resolve "node:crypto"`；若当时把它标成 external，
+  浏览器会在加载插件时抛错。现在 crypto 留在本就 Node-only 的 `room.js`
+  （`createRoom` 的默认 rng），`rules.js` 成为真正无依赖的纯模块，
+  并有 `test/client-bundling.test.mjs` 守着这条边界。
+- **结束后不显示别人的牌**：权威在一局结束时故意公开三家手牌（`secretsRevealed`），
+  但浮窗只画了自己的手牌，等于把复盘数据发了却不用。现在结束时列出另外两家的手牌。
+- **`prefsFrom` 把 `null` 当成坐标 0**（真实浏览器里发现）：`Number(null)` 是 `0` 而不是 `NaN`，
+  于是 `{"x":null,"y":null}` 一旦落盘，下次加载浮窗就跳进左上角。首次进入看不出问题
+  （存储为空时 `Number(undefined)` 才是 NaN），所以只在第二次加载暴露。现在只接受真正的 number。
+- **浮窗按固定高度定位，20 张牌时底部被顶出屏幕**（真实浏览器里发现）：窗口高度随内容变化、
+  样式表上限 78vh，而 `clampPosition` 用的是常量 `MINI_H`，默认位置就按 468px 算，
+  实际 651px 的窗口因此挂到屏幕外。现在先 `getBoundingClientRect()` 量真实盒子再夹取。

@@ -1,0 +1,26 @@
+# Local credentials
+.env
+.env.*
+!.env.example
+api_config.json
+api_config.local.json
+
+# Runtime captures, logs, and machine-specific files
+outputs/
+Cache/
+backups/
+GameInfoFile
+*.lnk
+*.log
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

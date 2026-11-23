@@ -1,0 +1,20 @@
+{
+  "dsh-doudizhu": {
+    "repository": "https://github.com/dingchenhui0618-arch/dsh-doudizhu",
+    "commit": "ed23ffca3b9b50da3c3b4bfd256bb0194ca72545",
+    "package_version": "0.2.5",
+    "license": "MIT",
+    "used_modules": ["src/rules.js", "src/bot.js", "src/game.js", "src/ui-logic.js"],
+    "local_changes": [
+      "rules.js: four-with-two single wings may share a rank",
+      "rules.js: triple-with-single includes non-bomb wing alternatives when the cheapest wing breaks a bomb",
+      "bot.js: lead and follow evaluation adds a two-turn cost per partially broken bomb group"
+    ],
+    "runtime_requirement": "Node.js; DSH is not used"
+  },
+  "DouZero_For_HLDDZ_FullAuto": {
+    "repository": "https://github.com/Vincentzyx/DouZero_For_HLDDZ_FullAuto",
+    "status": "reference_only_not_vendored",
+    "note": "Current experiment uses templates built from the supplied 1920x1080 screenshots. No DouZero model or auto-click code is used."
+  }
+}

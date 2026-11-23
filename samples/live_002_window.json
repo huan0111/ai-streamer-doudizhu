@@ -1,0 +1,16 @@
+{
+  "window_title": "欢乐斗地主",
+  "hwnd": 657968,
+  "window_rect": [
+    240,
+    138,
+    1696,
+    957
+  ],
+  "image_size": [
+    1456,
+    819
+  ],
+  "captured_at": "2026-11-18T22:35:00.259351+08:00",
+  "capture_method": "PIL.ImageGrab window bbox; no activation, resize, or click"
+}

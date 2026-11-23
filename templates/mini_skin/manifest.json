@@ -1,0 +1,35 @@
+{
+  "sources": {
+    "outputs/mini2_bid_after.png": {},
+    "outputs/mini_bot_check2.png": {},
+    "outputs/mini_bot_check3.png": {},
+    "outputs/mini_live_now2.png": {},
+    "outputs/mini_live_now6.png": {
+      "BJ": [
+        93,
+        397,
+        17,
+        24
+      ],
+      "8": [
+        414,
+        398,
+        24,
+        36
+      ],
+      "4": [
+        733,
+        399,
+        24,
+        34
+      ],
+      "3": [
+        825,
+        398,
+        22,
+        36
+      ]
+    }
+  },
+  "threshold": 0.7
+}

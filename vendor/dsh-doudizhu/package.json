@@ -1,0 +1,82 @@
+{
+  "name": "dsh-doudizhu",
+  "version": "0.2.5",
+  "engines": {
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "description": "斗地主 / Doudizhu (Fighting the Landlord) for DeepSeek Harness: a three-player LAN card table in the plugin's floating window — one machine hosts on its own port and two join with a six-character code; four computer levels fill empty seats so one person can still play a whole hand.",
+  "type": "module",
+  "main": "lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dingchenhui0618-arch/dsh-doudizhu.git"
+  },
+  "homepage": "https://github.com/dingchenhui0618-arch/dsh-doudizhu#readme",
+  "bugs": {
+    "url": "https://github.com/dingchenhui0618-arch/dsh-doudizhu/issues"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "SECURITY.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test \"test/*.test.mjs\"",
+    "prepush": "node scripts/pre-push-check.mjs",
+    "prepack": "node scripts/build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-layout"
+      ]
+    }
+  },
+  "keywords": [
+    "doudizhu",
+    "斗地主",
+    "dou-di-zhu",
+    "ddz",
+    "fighting-the-landlord",
+    "landlord",
+    "card-game",
+    "cardgame",
+    "poker",
+    "three-player",
+    "lan",
+    "multiplayer",
+    "deepseek-harness",
+    "deepseek",
+    "dsh",
+    "dsh-plugin",
+    "dsh-doudizhu",
+    "dsh-doudizhu-lan",
+    "cordis",
+    "cordis-plugin",
+    "floating-window"
+  ],
+  "license": "MIT"
+}

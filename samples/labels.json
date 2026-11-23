@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "rank_policy": "ranks_only_except_jokers",
+  "samples": [
+    {
+      "image": "sample_001_call_landlord.png",
+      "width": 1920,
+      "height": 1080,
+      "phase": "CALL_LANDLORD",
+      "is_my_turn": true,
+      "my_hand": ["BJ", "LJ", "2", "2", "A", "K", "K", "K", "10", "10", "8", "7", "7", "7", "6", "4", "4"],
+      "selected_ranks": [],
+      "selected_indices": [],
+      "bottom_cards": [],
+      "last_play": null,
+      "remaining_counts": {"left": 17, "right": 17, "self": 17},
+      "buttons": ["叫地主", "不叫"],
+      "countdown_seconds": 5
+    },
+    {
+      "image": "sample_002_selected_straight.png",
+      "width": 1920,
+      "height": 1080,
+      "phase": "PLAY",
+      "is_my_turn": true,
+      "my_hand": ["BJ", "LJ", "2", "2", "2", "K", "Q", "Q", "J", "J", "10", "10", "8", "7", "6", "6", "5", "4", "4", "3"],
+      "selected_ranks": ["8", "7", "6", "5", "4", "3"],
+      "selected_indices": [12, 13, 15, 16, 18, 19],
+      "bottom_cards": ["2", "K", "10"],
+      "last_play": null,
+      "remaining_counts": {"left": 17, "right": 17, "self": 20},
+      "buttons": ["出牌", "明牌", "提示"],
+      "button_centers": {"出牌": [666, 690], "明牌": [1028, 690], "提示": [1254, 690]},
+      "countdown_seconds": 13
+    },
+    {
+      "image": "sample_003_small_hand_popup.png",
+      "width": 1920,
+      "height": 1080,
+      "phase": "PLAY",
+      "is_my_turn": true,
+      "my_hand": ["BJ", "LJ", "2", "2", "K", "J", "10"],
+      "selected_ranks": [],
+      "selected_indices": [],
+      "bottom_cards": [],
+      "last_play": null,
+      "last_play_unknown": true,
+      "occlusions": ["opponent_profile_popup"],
+      "remaining_counts": {"left": 3, "right": 10, "self": 7},
+      "buttons": ["出牌", "提示"],
+      "button_centers": {"出牌": [779, 690], "提示": [1148, 690]},
+      "countdown_seconds": 9
+    },
+    {
+      "image": "sample_004_cannot_beat.png",
+      "width": 1920,
+      "height": 1080,
+      "phase": "PLAY",
+      "is_my_turn": true,
+      "my_hand": ["BJ", "2", "2", "K", "K", "Q", "J", "J", "10", "10", "9", "9", "6", "5", "5", "5", "4"],
+      "selected_ranks": [],
+      "selected_indices": [],
+      "bottom_cards": ["8", "7", "7"],
+      "last_play": {"seat": "left", "ranks": ["A", "A", "A", "3", "3"], "pass": false},
+      "other_visible_play": {"seat": "right", "ranks": ["4", "4", "4", "3", "3"]},
+      "remaining_counts": {"left": 12, "right": 3, "self": 17},
+      "buttons": ["要不起"],
+      "button_centers": {"要不起": [1030, 690]},
+      "countdown_seconds": 4
+    }
+  ]
+}

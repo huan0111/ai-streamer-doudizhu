@@ -1,0 +1,34 @@
+{
+  "source": "sample_004_cannot_beat.png",
+  "sources": {
+    "A": {
+      "seat": "left",
+      "bbox": [
+        5,
+        13,
+        38,
+        47
+      ]
+    },
+    "3": {
+      "seat": "left",
+      "bbox": [
+        152,
+        13,
+        29,
+        47
+      ]
+    },
+    "4": {
+      "seat": "right",
+      "bbox": [
+        7,
+        13,
+        32,
+        47
+      ]
+    }
+  },
+  "match_threshold": 0.8,
+  "scope": "Calibration self-check only; cross-image validation is still required."
+}
