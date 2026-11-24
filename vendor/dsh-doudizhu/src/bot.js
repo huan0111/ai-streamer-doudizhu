@@ -314,11 +314,13 @@ function choosePlay(view, rand) {
   }
 
   if (view.target) {
-    // The cheapest card that beats the table, and never a bomb while a plain beat
-    // exists — a rule of its own above is what spends one when it has to.
+    // Prefer a plain beat, but do not break one bomb merely to preserve another.
     if (plain.length) {
       if (view.difficulty === 'medium') return play(cheapest(plain).cardIds)
-      return play(cheapestWithoutBreaking(view.hand, plain).cardIds)
+      const allPlainBreak = plain.every(
+        (candidate) => brokenBombCount(view.hand, removeCards(view.hand, candidate.cardIds)) > 0,
+      )
+      return play(cheapestWithoutBreaking(view.hand, allPlainBreak ? moves : plain).cardIds)
     }
     return view.canPass ? PASS : play(cheapest(moves).cardIds)
   }
@@ -357,10 +359,13 @@ function brokenBombCount(handIds, afterIds) {
     const value = cardFromId(id)?.value
     if (value) after.set(value, (after.get(value) || 0) + 1)
   }
-  return [...before].filter(([value, count]) => {
+  const brokenBombs = [...before].filter(([value, count]) => {
     const remaining = after.get(value) || 0
     return count === 4 && remaining > 0 && remaining < 4
   }).length
+  const hadRocket = handIds.includes('BJ') && handIds.includes('LJ')
+  const brokenRocket = hadRocket && afterIds.includes('BJ') !== afterIds.includes('LJ')
+  return brokenBombs + (brokenRocket ? 1 : 0)
 }
 
 function chooseLead(view, moves, outstanding) {

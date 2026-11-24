@@ -155,8 +155,23 @@ def cluster_row(boxes):
     return boxes
 
 
+def drop_isolated_glyphs(boxes):
+    if len(boxes) < 3:
+        return boxes
+    gaps = [boxes[index + 1][0] - boxes[index][0] for index in range(len(boxes) - 1)]
+    typical_gap = float(np.median(gaps))
+    typical_top = float(np.median([box[1] for box in boxes[:-1]]))
+    while len(boxes) >= 3:
+        last = boxes[-1]
+        if last[0] - boxes[-2][0] > typical_gap * 1.5 and last[1] < typical_top - 8:
+            boxes = boxes[:-1]
+        else:
+            break
+    return boxes
+
+
 def detect_hand(image):
-    boxes = cluster_row(glyph_boxes(image))
+    boxes = drop_isolated_glyphs(cluster_row(glyph_boxes(image)))
     if not boxes:
         raise ValueError('no card glyphs found')
     scale_x, scale_y = scale_for(image)

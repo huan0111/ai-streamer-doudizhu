@@ -396,6 +396,24 @@ test('hell counts cards where hard does not: the bomb that actually stops the ru
   assert.equal(cardFromId(hell.cards[0]).value, 8)
 })
 
+test('困难/地狱跟牌不拆王炸，也不为保王炸改拆另一组炸弹', () => {
+  const target = classifyMove(cardsOfValue(9, 1))
+  const rocket = [...cardsOfValue(17, 1), ...cardsOfValue(16, 1)]
+  const safeHand = [...rocket, ...cardsOfValue(13, 1), ...cardsOfValue(3, 1)]
+  const bombHand = [...rocket, ...cardsOfValue(12, 4), ...cardsOfValue(7, 4)]
+  for (const difficulty of ['hard', 'hell']) {
+    const safe = chooseAction(playView({ difficulty, hand: safeHand, target, targetSeat: 1, canPass: true }))
+    assert.equal(safe.type, 'play')
+    assert.equal(safe.cards.length, 1)
+    assert.equal(cardFromId(safe.cards[0]).value, 13, `${difficulty} 应该保留双王并用 K 跟牌`)
+
+    const bombed = chooseAction(playView({ difficulty, hand: bombHand, target, targetSeat: 1, canPass: true }))
+    assert.equal(bombed.type, 'play')
+    assert.equal(bombed.cards.length, 4, `${difficulty} 不该拆王炸或四张 Q`)
+    assert.ok(bombed.cards.every((id) => cardFromId(id).value === 7), `${difficulty} 应该使用完整的四张 7`)
+  }
+})
+
 test('hell closes a hand out on a line nothing can answer', () => {
   // 大王 + 小王 + 一张 3, and every card left outside this hand is another 3. The
   // rocket cannot be answered and neither can a single 3, so the hand can be played

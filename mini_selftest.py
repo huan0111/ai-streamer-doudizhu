@@ -232,10 +232,41 @@ def follow_bomb_wing_cases():
           and recommended['ranks'] == ['Q', 'Q', 'Q', '5']
           and result['action'].get('ranks') == recommended['ranks'], str(result.get('recommended')))
 
+    hand = ['BJ', 'LJ', 'Q', 'Q', 'Q', 'Q', '7', '7', '7', '7']
+    bot.role = 'landlord'
+    bot.landlord_seat = None
+    bot.counts = {'left': 8, 'right': 17}
+    bot.played = []
+    result = bot.bot_decision('playing', hand, role='landlord', target=['9'],
+                              target_seat='left', can_pass=True, counts=bot.counts, mode='candidates')
+    check('follow does not split the rocket or exchange it for another broken bomb',
+          result['action'].get('ranks') == ['7', '7', '7', '7'], str(result.get('action')))
+    recommended = next((item for item in result['candidates'] if item['id'] == result.get('recommended')), None)
+    check('rocket regression official action remains in DeepSeek candidates',
+          result.get('recommended_source') == 'bot.js' and recommended is not None
+          and recommended['ranks'] == result['action'].get('ranks'), str(result.get('recommended')))
+
 
 def landlord_cases():
     check('landlord badge on right', mini_perceive.detect_landlord(mini_perceive.load_image(fixture_path('outputs/mini_bot_check2.png'))) == 'right', '')
     check('no landlord badge', mini_perceive.detect_landlord(mini_perceive.load_image(fixture_path('outputs/mini_live_now2.png'))) is None, '')
+
+    boxes = [[0, 0, 10, 10], [50, 0, 10, 10], [100, 0, 10, 10], [150, 0, 10, 10], [240, -12, 10, 10]]
+    filtered = mini_perceive.drop_isolated_glyphs(boxes)
+    check('rightmost landlord marker separated by a large gap is dropped from the hand',
+          [box[0] for box in filtered] == [0, 50, 100, 150], str(filtered))
+    normal = [[0, 0, 10, 10], [50, 0, 10, 10], [100, 0, 10, 10], [150, 0, 10, 10]]
+    check('normal card spacing keeps every hand glyph',
+          mini_perceive.drop_isolated_glyphs(normal) == normal, str(normal))
+
+    marked_hands = {
+        'outputs/hand_unreliable_031556_937410.png': ['2', 'K', 'K', 'K', 'Q', 'Q', 'J', '10', '9', '9', '9'],
+        'outputs/hand_unreliable_031907_307467.png': ['BJ', '2', '2', 'A', 'K', 'Q', 'Q', 'Q', 'J', 'J', 'J', 'J'],
+    }
+    for path, expected in marked_hands.items():
+        observation = mini_perceive.read_hand(mini_perceive.load_image(fixture_path(path)))
+        check(f'landlord card marker does not add phantom glyphs in {path}',
+              observation['my_hand'] == expected and not observation['unknown_indices'], str(observation['my_hand']))
 
 
 def play_tracking_cases():
@@ -437,6 +468,7 @@ def scene_plan_cases():
     check('bean notice can be dismissed safely', bean_notice['action'] == 'dismiss_bean_notice' and not bean_notice.get('blocked'), str(bean_notice))
     check('main lobby opens collection', lobby['action'] == 'open_collection' and lobby['point'] == mini_bot.STATIC_POINTS['lobby_collection'], str(lobby))
     check('main lobby tolerates OCR 王/主 typo', mini_bot.idle_scene_plan('斗地王合集 百变八雀牌 斗仙牌')['action'] == 'open_collection', '')
+    check('main lobby tolerates OCR 集/膜 typo', mini_bot.idle_scene_plan('斗地主合膜全对决 百变雀牌 趣玩合集')['action'] == 'open_collection', '')
     check('loading scene waits instead of clicking', loading['action'] == 'wait_loading' and loading['wait'], str(loading))
     check('unknown scene does not blind click', unknown['action'] == 'unknown_scene' and unknown['wait'], str(unknown))
     check('unknown scene asks the teacher instead of guessing', '找老师' in unknown['utterance'], str(unknown))
@@ -451,6 +483,8 @@ def scene_plan_cases():
     check('result confirmation tolerates missing nickname', mini_bot.confirm_result_scene('底分80 倍数120 继续游戏'), '')
     check('result confirmation tolerates OCR missing table headers',
           mini_bot.confirm_result_scene('昵称玩家甲 底分151515 360180 欢乐10032006 继续游戏'), '')
+    check('new result page tolerates OCR missing 续 in 继续游戏',
+          mini_bot.confirm_result_scene('欢乐斗地主 欢乐豆补助8000 立即领取 继游戏 510K玩法'), '')
     check('continue text alone is not confirmed result', not mini_bot.confirm_result_scene('新手场 继续游戏'), '')
     check('video reward is not confirmed result', not mini_bot.confirm_result_scene('观看视频 欢乐豆 暴击领豆'), '')
     check('friend authorization dialog is cancelled, not accepted',
@@ -760,6 +794,8 @@ def teammate_fallback_cases():
 
 
 def hint_button_cases():
+    import numpy as np
+
     bot = mini_bot.Bot()
     rgb = load_rgb('outputs/mini2_bid_after.png')
     sx = rgb.shape[1] / mini_bot.BASE_WIDTH
@@ -768,6 +804,16 @@ def hint_button_cases():
     check('hint button is located by OCR in a historical frame',
           button is not None and button['text'] == '提示' and button['source'] == 'rapidocr'
           and abs(button['center'][0] - 526) <= 3 and abs(button['center'][1] - 330) <= 3, str(button))
+
+    sx, sy = 1026 / mini_bot.BASE_WIDTH, 635 / mini_bot.BASE_HEIGHT
+    crop_box = [[10, 20], [30, 20], [30, 40], [10, 40]]
+    bot.rapidocr = lambda: lambda crop: ([[crop_box, '提示', 0.99]], None)
+    button = bot.find_hint_button(np.zeros((635, 1026, 3), dtype=np.uint8), sx, sy)
+    left = round(mini_bot.UI_ROI[0] * sx)
+    top = round(mini_bot.UI_ROI[1] * sy)
+    expected = [round((left + 20) / sx), round((top + 30) / sy)]
+    check('OCR button uses the scaled crop origin',
+          button is not None and button['center'] == expected, str((button, expected)))
 
 
 def pass_only_retry_cases():
@@ -803,6 +849,19 @@ def bid_button_cases():
         check(f'bid button templates {path}', {'叫地主', '不叫'} <= texts
               and all(item['source'] == 'template' for item in buttons)
               and all(280 <= item['center'][1] <= 370 for item in buttons), str(buttons))
+
+    base_buttons = bot.read_bid_buttons(rgb, 1, 1)
+    scaled = cv2.resize(rgb, (1031, 641), interpolation=cv2.INTER_AREA)
+    scaled_buttons = bot.read_bid_buttons(scaled, 1031 / mini_bot.BASE_WIDTH, 641 / mini_bot.BASE_HEIGHT)
+    base_by_text = {item['text']: item for item in base_buttons}
+    differences = [
+        abs(value - base_by_text[item['text']]['center'][axis])
+        for item in scaled_buttons if item['text'] in base_by_text
+        for axis, value in enumerate(item['center'])
+    ]
+    check('bid template centers stay in base coordinates on a non-base frame',
+          len(scaled_buttons) == 2 and all(item['source'] == 'template' for item in scaled_buttons)
+          and differences and max(differences) <= 2, str(scaled_buttons))
 
 
 def bid_recognition_cases():
@@ -1387,6 +1446,30 @@ def capture_cases():
               and logs[-1]['state'] == 'capture_failed', str(logs))
 
         logs.clear()
+        black = Image.new('RGB', (933, 580), (0, 0, 0))
+        with patch.object(mini_bot, 'print_window_image', return_value=black), \
+                patch.object(mini_bot.ImageGrab, 'grab', return_value=valid) as grab:
+            rgb, _ = bot.capture(1)
+        check('black PrintWindow frame falls back to a valid ImageGrab frame',
+              grab.call_count == 1 and rgb.mean() > 0
+              and any(item['state'] == 'capture_black_frame' and item['capture_method'] == 'PrintWindow'
+                      for item in logs) and not any(item['state'] == 'capture_failed' for item in logs), str(logs))
+
+        logs.clear()
+        with patch.object(mini_bot, 'print_window_image', return_value=black), \
+                patch.object(mini_bot.ImageGrab, 'grab', return_value=black):
+            try:
+                bot.capture(1)
+                error = None
+            except mini_bot.CaptureError as caught:
+                error = str(caught)
+        black_frames = [item for item in logs if item['state'] == 'capture_black_frame']
+        check('black frames from both capture methods fail closed after retry',
+              error == 'capture_black_frame' and len(black_frames) == 4
+              and logs[-1]['state'] == 'capture_failed'
+              and logs[-1]['reason'] == 'capture_black_frame', str(logs))
+
+        logs.clear()
         bot.user32.GetForegroundWindow = lambda: False
         with patch.object(mini_bot, 'print_window_image', return_value=None), \
                 patch.object(mini_bot.ImageGrab, 'grab') as grab:
@@ -1395,7 +1478,7 @@ def capture_cases():
                 error = None
             except mini_bot.CaptureError as caught:
                 error = str(caught)
-        check('occluded capture failure never returns a black frame',
+        check('occluded capture fails closed without ImageGrab',
               error == 'printwindow_failed_and_not_foreground' and grab.call_count == 0
               and logs[-1]['state'] == 'capture_failed'
               and logs[-1]['reason'] == 'printwindow_failed_and_not_foreground', str(logs))
@@ -1549,6 +1632,27 @@ def follow_cache_cases():
     check('follow cache hit is silent',
           bool(events) and events[0]['source'] == 'cached_decision' and events[0]['speak'] is False, str(events))
 
+    invalid = mini_bot.Bot()
+    logs = []
+    invalid.log = logs.append
+    invalid.notify = lambda *args, **kwargs: None
+    invalid.check_tuoguan = lambda *args: False
+    invalid.last_play = {
+        'seat': 'left', 'ranks': ['5', '5', '4', '4', '4', 'K', '3'], 'time': time.perf_counter(),
+    }
+    invalid.capture = lambda hwnd: (lead_rgb, None)
+    invalid.read_hand_with_retry = lambda hwnd: (lead_rgb, {
+        'my_hand': ['Q', 'Q', 'Q', 'Q'], 'unknown_indices': [], 'count': 4,
+    })
+    saved = []
+    invalid.save_action_frame = lambda rgb, prefix: saved.append(prefix)
+    hinted = []
+    invalid.fallback_hint = lambda *args, **kwargs: hinted.append('hint') or 'hint-result'
+    returned = invalid.handle_turn(None, (0, 0, 933, 580), scale_x, scale_y, ui)
+    check('invalid follow target saves evidence and still uses the game hint',
+          saved == ['follow_target_invalid'] and hinted == ['hint'] and returned == 'hint-result'
+          and any(item.get('state') == 'follow_target_invalid' for item in logs), str((saved, hinted, logs)))
+
 
 def watchdog_reset_cases():
     bot = mini_bot.Bot()
@@ -1615,6 +1719,16 @@ def count_badge_cases():
 
     bot._rapidocr = FakeOCR('9')
     check('badge read rejects a partial single digit', bot.read_badge_count(rgb, 'left', sx, sy) is None, '')
+
+    agreed_rgb = load_rgb('outputs/selection_unstable_113049_426018.png')
+    agreed_sx = agreed_rgb.shape[1] / mini_bot.BASE_WIDTH
+    agreed_sy = agreed_rgb.shape[0] / mini_bot.BASE_HEIGHT
+    bot._rapidocr = FakeOCR('1')
+    check('single-digit OCR is accepted when the badge template agrees',
+          bot.read_badge_count(agreed_rgb, 'left', agreed_sx, agreed_sy) == 1, '')
+    bot._rapidocr = FakeOCR('2')
+    check('conflicting single-digit OCR and template evidence is rejected',
+          bot.read_badge_count(agreed_rgb, 'left', agreed_sx, agreed_sy) is None, '')
 
     single_samples = [
         ('outputs/follow_rejected_092035_518235.png', 'left', 9),
@@ -1701,12 +1815,20 @@ def count_badge_cases():
     bot.badge_counts = {'left': 12, 'right': None}
     bot.badge_at = {'left': 5.0, 'right': 0.0}
     bot.play_at = {'left': 0.0, 'right': 0.0}
-    counted = bot.apply_play_count('left', 8)
+    counted = bot.apply_play_count('left', 8, seen_at=4.0)
     check('a play the badge already reflects is not subtracted twice',
           counted is False and bot.counts['left'] == 12, str(bot.counts))
-    counted = bot.apply_play_count('left', 3)
+    counted = bot.apply_play_count('left', 3, seen_at=6.0)
     check('a later play is subtracted after the badge read',
           counted is True and bot.counts['left'] == 9, str(bot.counts))
+
+    bot.counts = {'left': 9, 'right': 17}
+    bot.badge_counts = {'left': 9, 'right': None}
+    bot.badge_at = {'left': 5.0, 'right': 0.0}
+    bot.play_at = {'left': 4.0, 'right': 0.0}
+    counted = bot.apply_play_count('left', 8, seen_at=10.0)
+    check('a stale badge from the previous play does not suppress the next deduction',
+          counted is True and bot.counts['left'] == 1, str(bot.counts))
 
     original_landlord = mini_perceive.detect_landlord
     try:

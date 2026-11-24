@@ -8,7 +8,9 @@
     "local_changes": [
       "rules.js: four-with-two single wings may share a rank",
       "rules.js: triple-with-single includes non-bomb wing alternatives when the cheapest wing breaks a bomb",
-      "bot.js: lead and follow evaluation adds a two-turn cost per partially broken bomb group"
+      "bot.js: lead and follow evaluation adds a two-turn cost per partially broken bomb group",
+      "bot.js: removing one joker from a complete rocket counts as a partially broken bomb group",
+      "bot.js: normal follow considers whole bombs when every plain beat would break a bomb group"
     ],
     "runtime_requirement": "Node.js; DSH is not used"
   },

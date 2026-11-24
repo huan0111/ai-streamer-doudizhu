@@ -313,7 +313,7 @@ def compact_scene_text(text):
 def confirm_result_scene(text):
     text = compact_scene_text(text)
     scoreboard = '底分' in text and '倍数' in text and any(word in text for word in ('欢乐豆', '继续游戏'))
-    partial_ocr = '继续游戏' in text and any(word in text for word in ('底分', '倍数', '欢乐豆'))
+    partial_ocr = any(word in text for word in ('继续游戏', '继游戏')) and any(word in text for word in ('底分', '倍数', '欢乐豆'))
     return scoreboard or partial_ocr
 
 
@@ -406,7 +406,7 @@ def idle_scene_plan(text):
             'action': 'quick_start', 'utterance': '先进新手场，快速开始。',
             'reason': '选场页快速开始新手场', 'phase': 'lobby', 'point': STATIC_POINTS['quick_start'],
         }
-    if '斗地主合集' in text or ('斗地' in text and '合集' in text and any(word in text for word in ('百变', '斗仙牌', '趣玩'))):
+    if '斗地主合集' in text or ('斗地' in text and '合' in text and any(word in text for word in ('百变', '斗仙牌', '趣玩'))):
         return {
             'action': 'open_collection', 'utterance': '先去斗地主合集，找个新手场。',
             'reason': '从主大厅进入斗地主合集', 'phase': 'lobby', 'point': STATIC_POINTS['lobby_collection'],
@@ -510,6 +510,7 @@ class Bot:
         self.played_total = {'left': 0, 'right': 0}
         self.played = []
         self.play_candidate = {'left': (), 'right': ()}
+        self.play_candidate_at = {'left': 0.0, 'right': 0.0}
         self.play_state = {'left': (), 'right': ()}
         self.play_unreliable = {'left': (), 'right': ()}
         self.play_unreliable_candidate = {'left': (), 'right': ()}
@@ -637,13 +638,16 @@ class Bot:
                 rgb = np.array(image)
                 record = self.capture_record(hwnd, bbox, image.size, method, attempt)
                 if image.size == expected and rgb.shape[:2] == (expected[1], expected[0]):
-                    geometry = (tuple(bbox), image.size, record['window_rect'], record['dpi'], method)
-                    if geometry != self.last_capture_geometry:
-                        self.last_capture_geometry = geometry
-                        self.log({'state': 'client_size', 'size': list(expected), **record,
-                                  'rgb_shape': list(rgb.shape)})
-                    return rgb, bbox
-                reason = 'capture_size_mismatch'
+                    if np.any(rgb):
+                        geometry = (tuple(bbox), image.size, record['window_rect'], record['dpi'], method)
+                        if geometry != self.last_capture_geometry:
+                            self.last_capture_geometry = geometry
+                            self.log({'state': 'client_size', 'size': list(expected), **record,
+                                      'rgb_shape': list(rgb.shape)})
+                        return rgb, bbox
+                    reason = 'capture_black_frame'
+                else:
+                    reason = 'capture_size_mismatch'
                 self.log({'state': reason, **record, 'rgb_shape': list(rgb.shape)})
             if self.user32.GetForegroundWindow() == hwnd:
                 method = 'ImageGrab'
@@ -658,13 +662,16 @@ class Bot:
                     rgb = np.array(image)
                     record = self.capture_record(hwnd, bbox, image.size, method, attempt)
                     if image.size == expected and rgb.shape[:2] == (expected[1], expected[0]):
-                        geometry = (tuple(bbox), image.size, record['window_rect'], record['dpi'], method)
-                        if geometry != self.last_capture_geometry:
-                            self.last_capture_geometry = geometry
-                            self.log({'state': 'client_size', 'size': list(expected), **record,
-                                      'rgb_shape': list(rgb.shape)})
-                        return rgb, bbox
-                    reason = 'capture_size_mismatch'
+                        if np.any(rgb):
+                            geometry = (tuple(bbox), image.size, record['window_rect'], record['dpi'], method)
+                            if geometry != self.last_capture_geometry:
+                                self.last_capture_geometry = geometry
+                                self.log({'state': 'client_size', 'size': list(expected), **record,
+                                          'rgb_shape': list(rgb.shape)})
+                            return rgb, bbox
+                        reason = 'capture_black_frame'
+                    else:
+                        reason = 'capture_size_mismatch'
                     self.log({'state': reason, **record, 'rgb_shape': list(rgb.shape)})
             elif image is None:
                 reason = 'printwindow_failed_and_not_foreground'
@@ -1167,15 +1174,15 @@ class Bot:
         if len(digits) >= 2:
             value = int(digits[:2])
             return value if 10 <= value <= 20 else None
-        if digits:
-            return None
+        ocr_digit = int(digits) if digits else None
         scores = mini_perceive.match_badge_digit(cv2.cvtColor(crop, cv2.COLOR_RGB2BGR))
         if not scores:
             return None
         score, digit = scores[0]
         second_score = scores[1][0] if len(scores) > 1 else -1.0
         if score >= 0.72 and score - second_score >= 0.04:
-            return int(digit)
+            value = int(digit)
+            return value if ocr_digit is None or ocr_digit == value else None
         return None
 
     def update_counts_from_badges(self, rgb, scale_x, scale_y, force=False):
@@ -1222,7 +1229,7 @@ class Bot:
                 'text': str(text).strip(),
                 'confidence': round(float(confidence), 3),
                 'source': 'rapidocr',
-                'center': [round((x0 + center_x) / scale_x), round((y0 + center_y) / scale_y)],
+                'center': [round((round(x0 * scale_x) + center_x) / scale_x), round((round(y0 * scale_y) + center_y) / scale_y)],
             })
         return buttons
 
@@ -1263,7 +1270,7 @@ class Bot:
                 'text': text,
                 'confidence': round(float(score), 3),
                 'source': 'template',
-                'center': [round((x0 + center_x) / scale_x), round((y0 + center_y) / scale_y)],
+                'center': [round((round(x0 * scale_x) + center_x) / scale_x), round((round(y0 * scale_y) + center_y) / scale_y)],
             })
         if not buttons:
             buttons = self.read_ui_buttons(rgb, scale_x, scale_y)
@@ -1807,10 +1814,10 @@ class Bot:
         self.landlord_seat = seat
         self.role = 'landlord' if seat is None else 'farmer'
 
-    def apply_play_count(self, seat, amount):
-        now = time.perf_counter()
-        already_counted = self.badge_at[seat] > self.play_at[seat]
-        self.play_at[seat] = now
+    def apply_play_count(self, seat, amount, seen_at=None):
+        seen_at = seen_at or time.perf_counter()
+        already_counted = self.badge_at[seat] >= seen_at
+        self.play_at[seat] = seen_at
         if already_counted:
             return False
         self.counts[seat] = max(0, self.counts[seat] - amount)
@@ -1847,7 +1854,7 @@ class Bot:
                         self.follow_cache_key = None
                         self.follow_cache = None
                     estimate = info.get('count_est') or len(ranks)
-                    counted = self.apply_play_count(seat, estimate)
+                    counted = self.apply_play_count(seat, estimate, self.unreliable_since[seat])
                     self.has_played[seat] = True
                     play_changed = True
                     self.log({'state': 'play_count_estimated', 'seat': seat, 'ranks': list(ranks),
@@ -1858,11 +1865,12 @@ class Bot:
             self.unreliable_since[seat] = 0.0
             if ranks != self.play_candidate[seat]:
                 self.play_candidate[seat] = ranks
+                self.play_candidate_at[seat] = now
                 continue
             if ranks != self.play_state[seat]:
                 self.play_state[seat] = ranks
                 if ranks:
-                    counted = self.apply_play_count(seat, len(ranks))
+                    counted = self.apply_play_count(seat, len(ranks), self.play_candidate_at[seat])
                     self.has_played[seat] = True
                     play_changed = True
                     self.played.extend(ranks)
@@ -1956,8 +1964,10 @@ class Bot:
                 )
                 rules = json.loads((ROOT / 'outputs' / 'mini_rule_output.json').read_text(encoding='utf-8'))
             except Exception as error:
-                self.log({'state': 'follow_target_invalid', 'target': target, 'error': str(error)})
-                self.notify(f"【失误】目标 {' '.join(target)} 无法校验，改用提示", 'error')
+                self.log({'state': 'follow_target_invalid', 'target_seat': target_seat, 'target': target,
+                          'counts': dict(self.counts), 'badge_counts': dict(self.badge_counts), 'error': str(error)})
+                self.save_action_frame(rgb, 'follow_target_invalid')
+                self.notify(f"【识别】目标 {' '.join(target)} 无法校验，已保存现场，改用提示", 'error')
                 return self.fallback_hint(hwnd, bbox, scale_x, scale_y, ui)
             legal = rules['candidates']
             if not legal:
@@ -2220,6 +2230,7 @@ class Bot:
         self.played = []
         self.play_state = {'left': (), 'right': ()}
         self.play_candidate = {'left': (), 'right': ()}
+        self.play_candidate_at = {'left': 0.0, 'right': 0.0}
         self.play_unreliable = {'left': (), 'right': ()}
         self.play_unreliable_candidate = {'left': (), 'right': ()}
         self.unreliable_since = {'left': 0.0, 'right': 0.0}
@@ -2460,6 +2471,7 @@ class Bot:
                     self.played = []
                     self.play_state = {'left': (), 'right': ()}
                     self.play_candidate = {'left': (), 'right': ()}
+                    self.play_candidate_at = {'left': 0.0, 'right': 0.0}
                     self.play_unreliable = {'left': (), 'right': ()}
                     self.play_unreliable_candidate = {'left': (), 'right': ()}
                     self.unreliable_since = {'left': 0.0, 'right': 0.0}
