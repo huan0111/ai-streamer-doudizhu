@@ -1,5 +1,14 @@
 # 更新记录
 
+## 2026-11-27
+
+### 项目展示与文档
+
+- README 首屏改为项目价值、实机 GIF 和 B 站完整视频，随后提供核心能力、快速开始、验证边界和文档导航。
+- 主播接入、识别策略、Windows/DPI 和排障资料分别迁移到 `docs/integration.md`、`recognition.md`、`windows-and-dpi.md`、`troubleshooting.md`，保留原有技术内容并减少重复。
+- 新增 `docs/images/ai-streamer-doudizhu-demo.gif` 和 1280×640 社交封面 `docs/images/social-preview.png`。
+- 安装、API 配置、自检和单局启动命令保持不变；本轮仅调整展示素材与文档，不修改游戏代码。
+
 ## 2026-11-25
 
 ### 识别与计数
